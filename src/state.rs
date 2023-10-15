@@ -36,7 +36,7 @@ impl TryFrom<String> for State {
                     row += 1;
                     col = 0;
                 }
-                '0' => col += 1,
+                '0' | ' ' => col += 1,
                 '1' => {
                     if row >= TOTAL_ROWS {
                         return Err(GridParseError("too many rows!".into(), (row, col)));
