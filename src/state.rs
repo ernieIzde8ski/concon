@@ -7,6 +7,8 @@ pub struct State {
 
 const TOTAL_ROWS: usize = 64;
 const TOTAL_COLS: usize = 64;
+const I_TOTAL_ROWS: isize = 64;
+const I_TOTAL_COLS: isize = 64;
 
 #[derive(Debug)]
 pub struct GridParseError(String, (usize, usize));
@@ -60,7 +62,6 @@ impl TryFrom<String> for State {
     }
 }
 
-
 impl fmt::Display for State {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "╔{}╗", str::repeat("═", TOTAL_COLS))?;
@@ -88,44 +89,18 @@ impl State {
 
 impl State {
     /// Gets total number of live neighbors next to a grid point.
-    fn check_neighbors(&self, row: usize, col: usize) -> u8 {
+    fn check_neighbors(&self, row: isize, col: isize) -> u8 {
         let mut total_live_neighbors = 0;
-
         for i in -1..=1 {
             for j in -1..=1 {
                 if i == 0 && j == 0 {
                     continue;
                 }
 
-                let r = match (i, row) {
-                    (-1, 0) => TOTAL_ROWS - 1,
-                    (-1, cur) => cur - 1,
-                    (1, mut cur) => {
-                        cur += 1;
-                        if cur == TOTAL_ROWS {
-                            0
-                        } else {
-                            cur
-                        }
-                    }
-                    (_, cur) => cur,
-                };
+                let row = usize::try_from(isize::rem_euclid(i + row, I_TOTAL_ROWS)).unwrap();
+                let col = usize::try_from(isize::rem_euclid(j + col, I_TOTAL_COLS)).unwrap();
 
-                let c = match (j, col) {
-                    (-1, 0) => TOTAL_COLS - 1,
-                    (-1, cur) => cur - 1,
-                    (1, mut cur) => {
-                        cur += 1;
-                        if cur == TOTAL_COLS {
-                            0
-                        } else {
-                            cur
-                        }
-                    }
-                    (_, cur) => cur,
-                };
-
-                if self.grid[r][c] {
+                if self.grid[row][col] {
                     total_live_neighbors += 1;
                 }
             }
@@ -139,7 +114,10 @@ impl State {
 
         for r in 0..TOTAL_ROWS {
             for c in 0..TOTAL_COLS {
-                next_grid[r][c] = match (self.grid[r][c], self.check_neighbors(r, c)) {
+                next_grid[r][c] = match (
+                    self.grid[r][c],
+                    self.check_neighbors(isize::try_from(r).unwrap(), isize::try_from(c).unwrap()),
+                ) {
                     // Survival
                     (true, 2 | 3) => true,
                     // Birth
